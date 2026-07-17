@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FrameForge — Aspect Ratio Calculator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,400..900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#0b0d10;
+  --panel:#12151a;
+  --panel-2:#181c23;
+  --line:#262c36;
+  --text:#e8ebf0;
+  --dim:#8a93a3;
+  --amber:#ffb454;      /* tally / record amber */
+  --safe:#4fd1a1;       /* safe-area green */
+  --mono:'JetBrains Mono',monospace;
+  --sans:'Archivo',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  background:var(--ink);
+  color:var(--text);
+  font-family:var(--sans);
+  min-height:100vh;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  padding:32px 16px 48px;
+}
+header{width:100%;max-width:920px;margin-bottom:28px;display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:8px}
+h1{font-weight:900;font-stretch:112%;font-size:clamp(24px,4vw,34px);letter-spacing:-0.5px;text-transform:uppercase}
+h1 .accent{color:var(--amber)}
+.tagline{font-family:var(--mono);font-size:12px;color:var(--dim);letter-spacing:.5px}
+main{width:100%;max-width:920px;display:grid;grid-template-columns:1fr 1fr;gap:20px}
+@media(max-width:760px){main{grid-template-columns:1fr}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:22px}
+.card h2{font-size:11px;font-family:var(--mono);font-weight:500;color:var(--dim);text-transform:uppercase;letter-spacing:2px;margin-bottom:16px}
+label{display:block;font-family:var(--mono);font-size:11px;color:var(--dim);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px}
+.row{display:flex;gap:12px;margin-bottom:16px}
+.field{flex:1}
+input,select{
+  width:100%;background:var(--panel-2);border:1px solid var(--line);border-radius:6px;
+  color:var(--text);font-family:var(--mono);font-size:16px;padding:11px 12px;outline:none;
+}
+input:focus,select:focus{border-color:var(--amber)}
+input::placeholder{color:#4a5261}
+.ratio-sep{align-self:flex-end;padding-bottom:12px;font-family:var(--mono);color:var(--dim);font-size:16px}
+.presets{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px}
+.chip{
+  font-family:var(--mono);font-size:12px;padding:6px 11px;border-radius:999px;
+  border:1px solid var(--line);background:transparent;color:var(--dim);cursor:pointer;transition:.15s;
+}
+.chip:hover{border-color:var(--amber);color:var(--text)}
+.chip.active{background:var(--amber);color:var(--ink);border-color:var(--amber);font-weight:700}
+.toggle{display:flex;border:1px solid var(--line);border-radius:6px;overflow:hidden;margin-bottom:16px}
+.toggle button{
+  flex:1;background:transparent;border:none;color:var(--dim);font-family:var(--mono);
+  font-size:12px;padding:10px;cursor:pointer;letter-spacing:1px;text-transform:uppercase;
+}
+.toggle button.active{background:var(--panel-2);color:var(--amber);font-weight:700}
+.result{
+  margin-top:6px;background:var(--panel-2);border:1px solid var(--line);border-radius:8px;
+  padding:18px;text-align:center;
+}
+.result .big{font-family:var(--mono);font-size:clamp(26px,5vw,38px);font-weight:700;letter-spacing:-1px}
+.result .big .out{color:var(--amber)}
+.result .sub{font-family:var(--mono);font-size:12px;color:var(--dim);margin-top:8px}
+.warn{color:var(--amber)}
+.copy{
+  margin-top:14px;width:100%;background:var(--amber);color:var(--ink);border:none;border-radius:6px;
+  font-family:var(--mono);font-weight:700;font-size:13px;padding:11px;cursor:pointer;letter-spacing:1px;
+  text-transform:uppercase;transition:.15s;
+}
+.copy:hover{filter:brightness(1.1)}
+/* monitor preview */
+.monitor{display:flex;flex-direction:column}
+.viewport{
+  flex:1;min-height:280px;background:
+    repeating-linear-gradient(0deg,transparent,transparent 19px,#141821 19px,#141821 20px),
+    repeating-linear-gradient(90deg,transparent,transparent 19px,#141821 19px,#141821 20px),
+    var(--panel-2);
+  border:1px solid var(--line);border-radius:8px;display:flex;align-items:center;justify-content:center;
+  position:relative;overflow:hidden;padding:24px;
+}
+.frame{
+  border:2px solid var(--amber);position:relative;transition:width .25s ease,height .25s ease;
+  box-shadow:0 0 32px rgba(255,180,84,.12);background:rgba(255,180,84,.04);
+  display:flex;align-items:center;justify-content:center;
+}
+.frame::before,.frame::after{content:'';position:absolute;border:1px dashed rgba(79,209,161,.5)}
+.frame::before{inset:5%}   /* action safe */
+.frame::after{inset:10%}   /* title safe */
+.frame .dims{font-family:var(--mono);font-size:12px;color:var(--amber);z-index:1;background:rgba(11,13,16,.7);padding:3px 8px;border-radius:4px}
+.meta{display:flex;justify-content:space-between;font-family:var(--mono);font-size:11px;color:var(--dim);margin-top:12px;flex-wrap:wrap;gap:6px}
+.meta .dot{color:var(--safe)}
+footer{margin-top:32px;font-family:var(--mono);font-size:11px;color:#4a5261;text-align:center}
+@media (prefers-reduced-motion: reduce){.frame{transition:none}}
+</style>
+</head>
+<body>
+<header>
+  <h1>Frame<span class="accent">Forge</span></h1>
+  <span class="tagline">ASPECT RATIO ▸ DIMENSION CALCULATOR</span>
+</header>
+
+<main>
+  <section class="card">
+    <h2>Input</h2>
+
+    <label>Ratio presets</label>
+    <div class="presets" id="presets">
+      <button class="chip" data-r="16:9">16:9</button>
+      <button class="chip" data-r="9:16">9:16</button>
+      <button class="chip" data-r="4:3">4:3</button>
+      <button class="chip" data-r="3:4">3:4</button>
+      <button class="chip" data-r="1:1">1:1</button>
+      <button class="chip" data-r="21:9">21:9</button>
+      <button class="chip" data-r="2.39:1">2.39:1</button>
+      <button class="chip" data-r="4:5">4:5</button>
+      <button class="chip" data-r="3:2">3:2</button>
+      <button class="chip" data-r="2:3">2:3</button>
+    </div>
+
+    <div class="row">
+      <div class="field">
+        <label for="rw">Ratio W</label>
+        <input id="rw" type="number" step="any" min="0" value="4" inputmode="decimal">
+      </div>
+      <div class="ratio-sep">:</div>
+      <div class="field">
+        <label for="rh">Ratio H</label>
+        <input id="rh" type="number" step="any" min="0" value="3" inputmode="decimal">
+      </div>
+    </div>
+
+    <label>Known dimension</label>
+    <div class="toggle" role="tablist">
+      <button id="modeH" class="active" type="button">I know height</button>
+      <button id="modeW" type="button">I know width</button>
+    </div>
+
+    <div class="field">
+      <label for="known" id="knownLabel">Height (px)</label>
+      <input id="known" type="number" step="any" min="0" value="1080" inputmode="decimal">
+    </div>
+
+    <div class="result">
+      <div class="big" id="resultLine">Width = <span class="out">1440</span> px</div>
+      <div class="sub" id="resultSub">4:3 @ 1440 × 1080</div>
+    </div>
+
+    <button class="copy" id="copyBtn" type="button">Copy dimensions</button>
+  </section>
+
+  <section class="card monitor">
+    <h2>Frame preview</h2>
+    <div class="viewport" id="viewport">
+      <div class="frame" id="frame"><span class="dims" id="frameDims">1440 × 1080</span></div>
+    </div>
+    <div class="meta">
+      <span><span class="dot">▪</span> DASHED = ACTION / TITLE SAFE</span>
+      <span id="metaRatio">RATIO 1.333 · LANDSCAPE</span>
+    </div>
+  </section>
+</main>
+
+<footer>FrameForge · free tool by Maple Media · works offline, no data leaves your browser</footer>
+
+<script>
+const rw = document.getElementById('rw');
+const rh = document.getElementById('rh');
+const known = document.getElementById('known');
+const knownLabel = document.getElementById('knownLabel');
+const modeH = document.getElementById('modeH');
+const modeW = document.getElementById('modeW');
+const resultLine = document.getElementById('resultLine');
+const resultSub = document.getElementById('resultSub');
+const frame = document.getElementById('frame');
+const frameDims = document.getElementById('frameDims');
+const metaRatio = document.getElementById('metaRatio');
+const viewport = document.getElementById('viewport');
+const copyBtn = document.getElementById('copyBtn');
+let mode = 'h'; // known dimension
+let lastW = 1440, lastH = 1080;
+
+function parseNum(el){ const v = parseFloat(el.value); return (isFinite(v) && v > 0) ? v : null; }
+
+function calc(){
+  const w = parseNum(rw), h = parseNum(rh), k = parseNum(known);
+  // highlight matching preset
+  document.querySelectorAll('.chip').forEach(c=>{
+    const [pw,ph] = c.dataset.r.split(':').map(Number);
+    c.classList.toggle('active', w && h && Math.abs(pw/ph - w/h) < 1e-6);
+  });
+  if(!w || !h || !k){
+    resultLine.innerHTML = '<span class="out">—</span>';
+    resultSub.textContent = 'Enter ratio + one dimension';
+    return;
+  }
+  let outW, outH, label;
+  if(mode === 'h'){ outH = k; outW = k * w / h; label = 'Width'; }
+  else { outW = k; outH = k * h / w; label = 'Height'; }
+  const outVal = mode === 'h' ? outW : outH;
+  const rounded = Math.round(outVal * 100) / 100;
+  const display = Number.isInteger(rounded) ? rounded : rounded.toFixed(2);
+  lastW = Math.round(outW * 100)/100; lastH = Math.round(outH * 100)/100;
+
+  const notWhole = !Number.isInteger(rounded);
+  const even = Math.round(outVal / 2) * 2;
+  resultLine.innerHTML = `${label} = <span class="out">${display}</span> px`;
+  let sub = `${rw.value}:${rh.value} @ ${fmt(lastW)} × ${fmt(lastH)}`;
+  if(notWhole){
+    sub += ` · <span class="warn">not whole — nearest even: ${even}px</span>`;
+  } else if(rounded % 2 !== 0){
+    sub += ` · <span class="warn">odd number — codecs prefer even: ${even}px</span>`;
+  }
+  resultSub.innerHTML = sub;
+
+  // preview
+  const ratio = w / h;
+  const vw = viewport.clientWidth - 48, vh = viewport.clientHeight - 48;
+  let fw = vw, fh = vw / ratio;
+  if(fh > vh){ fh = vh; fw = vh * ratio; }
+  frame.style.width = fw + 'px';
+  frame.style.height = fh + 'px';
+  frameDims.textContent = `${fmt(lastW)} × ${fmt(lastH)}`;
+  const orient = ratio > 1.02 ? 'LANDSCAPE' : ratio < 0.98 ? 'PORTRAIT' : 'SQUARE';
+  metaRatio.textContent = `RATIO ${ratio.toFixed(3)} · ${orient}`;
+}
+
+function fmt(n){ return Number.isInteger(n) ? n : n.toFixed(2); }
+
+function setMode(m){
+  mode = m;
+  modeH.classList.toggle('active', m==='h');
+  modeW.classList.toggle('active', m==='w');
+  knownLabel.textContent = m==='h' ? 'Height (px)' : 'Width (px)';
+  calc();
+}
+modeH.addEventListener('click', ()=>setMode('h'));
+modeW.addEventListener('click', ()=>setMode('w'));
+
+document.getElementById('presets').addEventListener('click', e=>{
+  const chip = e.target.closest('.chip'); if(!chip) return;
+  const [w,h] = chip.dataset.r.split(':');
+  rw.value = w; rh.value = h; calc();
+});
+
+[rw,rh,known].forEach(el=>el.addEventListener('input', calc));
+window.addEventListener('resize', calc);
+
+copyBtn.addEventListener('click', async ()=>{
+  const txt = `${fmt(lastW)}x${fmt(lastH)}`;
+  try{
+    await navigator.clipboard.writeText(txt);
+    copyBtn.textContent = 'Copied ' + txt;
+  }catch(e){
+    copyBtn.textContent = txt + ' (select & copy)';
+  }
+  setTimeout(()=>copyBtn.textContent='Copy dimensions', 1800);
+});
+
+calc();
+</script>
+</body>
+</html>
